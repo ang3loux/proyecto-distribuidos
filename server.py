@@ -25,7 +25,7 @@ server.listen(number_clients)
 connections = []
 
 
-def desitions(msg, connection, address):
+def replyMsg(msg, connection, address):
     if msg['typemsg'] == 0:
         if resource[msg['msg']] == '':
             resource[msg['msg']] = msg['msg2']
@@ -34,14 +34,15 @@ def desitions(msg, connection, address):
                 'msg': 1,
                 'msg2': msg['msg']
             }
-            print 'Recurso otorgado'
+            print 'Recurso ' + str(msg['msg']) + ' otorgado a ' + msg['msg2']
             connection.send(json.dumps(json_msg))
+            
         else:
             json_msg = {
                 'typemsg': 1,
                 'msg': 0,
             }
-            print 'Recurso no otorgado'
+            print 'Recurso ' + str(msg['msg']) + ' NO otorgado a ' + msg['msg2']
             connection.send(json.dumps(json_msg))
 
 
@@ -53,21 +54,21 @@ def connection_thread(connection, address, index):
     else:
         name_client = 'C'
 
-    json_start = {
+    json_msg = {
         'typemsg': 0,
         'msg': name_client,
     }
 
-    print 'Asignado a', address[0], 'el nombre', name_client
-    connection.send(json.dumps(json_start))
+    print 'Asignado a ' + address[0] + ' el nombre ' + name_client
+    connection.send(json.dumps(json_msg))
 
     while True:
+        print '--------------------------------------------------'
+
         try:
             json_msg = connection.recv(2048)
             if json_msg:
-                # print "<" + address[0] + "> " + json_msg
-                # connection.send("HOLA")
-                desitions(json.loads(json_msg), connection, address)
+                replyMsg(json.loads(json_msg), connection, address)
 
             else:
                 remove_connection(connection)
@@ -92,6 +93,7 @@ def remove_connection(connection):
 
 
 os.system('clear')
+
 print "Iniciando servidor"
 print "IP: " + ipAddress
 print "Puerto: " + str(port)
@@ -104,10 +106,6 @@ while number_clients > 0:
     connections.append(connection)
     print "<" + address[0] + "> conectado"
     start_new_thread(connection_thread, (connection, address, number_clients))
-
-# sleep(1)
-# print "\nClientes conectados, inicio de proceso..."
-# broadcast_message("Clientes conectados, inicio de proceso...\n")
 
 dato = raw_input("\nPresione enter para terminar.\n")
 print "\nCerrando conexiones..."
