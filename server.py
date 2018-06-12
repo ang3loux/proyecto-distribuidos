@@ -10,30 +10,64 @@ import json
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-if len(sys.argv) != 5:
+if len(sys.argv) != 3:
     print "Uso correcto: script, direccion IP y puerto"
     exit()
 
 ipAddress = str(sys.argv[1])
 port = int(sys.argv[2])
-numberClients = 3
+number_clients = 3
+resource = ['', '', '']
 
 server.bind((ipAddress, port))
-server.listen(numberClients)
+server.listen(number_clients)
 
 connections = []
 
-def connection_thread(connection, address):
-    connection.send("Conectado al servidor, esperando a los demas clientes...")
+
+def desitions(msg, connection, address):
+    if msg['typemsg'] == 0:
+        if resource[msg['msg']] == '':
+            resource[msg['msg']] = msg['msg2']
+            json_msg = {
+                'typemsg': 1,
+                'msg': 1,
+                'msg2': msg['msg']
+            }
+            print 'Recurso otorgado'
+            connection.send(json.dumps(json_msg))
+        else:
+            json_msg = {
+                'typemsg': 1,
+                'msg': 0,
+            }
+            print 'Recurso no otorgado'
+            connection.send(json.dumps(json_msg))
+
+
+def connection_thread(connection, address, index):
+    if index == 2:
+        name_client = 'A'
+    elif index == 1:
+        name_client = 'B'
+    else:
+        name_client = 'C'
+
+    json_start = {
+        'typemsg': 0,
+        'msg': name_client,
+    }
+
+    print 'Asignado a', address[0], 'el nombre', name_client
+    connection.send(json.dumps(json_start))
 
     while True:
         try:
-            message = connection.recv(2048)
-            if message:
-                # print "<" + address[0] + "> " + message
+            json_msg = connection.recv(2048)
+            if json_msg:
+                # print "<" + address[0] + "> " + json_msg
                 # connection.send("HOLA")
-                print message
-                connection.send(message)
+                desitions(json.loads(json_msg), connection, address)
 
             else:
                 remove_connection(connection)
@@ -57,33 +91,23 @@ def remove_connection(connection):
         print "Cliente desconectado. Conexion cerrada."
 
 
-def code_message(message):
-    print "Code message"
-
-
-def decode_messagge(message):
-    print "Decode message"
-
-# def start_process():
-
-
 os.system('clear')
 print "Iniciando servidor"
 print "IP: " + ipAddress
 print "Puerto: " + str(port)
-print "Nro de clientes: " + str(numberClients)
+print "Nro de clientes: " + str(number_clients)
 print "\nEsperando a clientes..."
 
-while numberClients > 0:
-    numberClients -= 1
+while number_clients > 0:
+    number_clients -= 1
     connection, address = server.accept()
     connections.append(connection)
     print "<" + address[0] + "> conectado"
-    start_new_thread(connection_thread, (connection, address))
+    start_new_thread(connection_thread, (connection, address, number_clients))
 
-sleep(1)
-print "\nClientes conectados, inicio de proceso..."
-broadcast_message("Clientes conectados, inicio de proceso...\n")
+# sleep(1)
+# print "\nClientes conectados, inicio de proceso..."
+# broadcast_message("Clientes conectados, inicio de proceso...\n")
 
 dato = raw_input("\nPresione enter para terminar.\n")
 print "\nCerrando conexiones..."
