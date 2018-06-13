@@ -20,59 +20,81 @@ name = ''
 
 server.connect((ipAddress, port))
 
-# def sleepThread():
-#     sleepTime = random.randint(1, 5)
-#     print sleepTime
-#     sleep(sleepTime)
+def sleep_thread():
+    sleep_time = random.randint(1, 5)
+    print 'Me voy a dormir por ' + str(sleep_time) + ' seg(s)'
+    sleep(sleep_time)
 
 
-def sendMsg():
+def send_msg(args):
     flag = 0
+    missing_resource = -1
 
-    for resource in resources:
+    for idx, resource in enumerate(resources):
         if resource == '':
             flag += 1
+            missing_resource = idx
 
     if flag >= 2:
-        print 'Recursos faltantes:', flag
+        print 'Recursos faltantes: ' + str(flag)
         while True:
             index = random.randint(0, 2)
             if resources[index] == '':
                 json_msg = {
-                    'typemsg': 0,
-                    'msg': index,
-                    'msg2':name,
+                    'msg_type': 0,
+                    'resource_index': index,
+                    'client_name':name,
                 }
-                print 'Recurso pedido:', index
-                server.send(json.dumps(json_msg))
+                print 'Recurso pedido: ' + str(index)
                 break
 
     elif flag == 1:
-        # PEDIR EL QUE FALTA
-        print flag
+        json_msg = {
+            'msg_type': 1,
+            'resource_index': missing_resource,
+            'client_name': name
+        }
+        print 'Unico recurso faltante'
+        print 'Recurso pedido: ' + str(missing_resource)
 
     else:
-        # SE DUERME
-        print flag
+        sleep_thread()
+        json_msg = {
+            'msg_type': 2,
+            'queued_client': args['queued_client'],
+            'queued_resource': args['queued_resource'],
+            'client_name': name
+        }
+        print 'Liberando todos los recursos tomados'
+
+    server.send(json.dumps(json_msg))
 
 
-def receiveMsg(msg):
-    if msg['typemsg'] == 0:
-        name = msg['msg']
+def receive_msg(server_msg):
+    args = {}
+
+    if server_msg['msg_type'] == 0:
+        name = server_msg['client_name']
         print 'Mi etiqueta es: ' + name
 
-    elif msg['typemsg'] == 1:
-        if msg['msg'] == 0:
+    elif server_msg['msg_type'] == 1:
+        if server_msg['msg_subtype'] == 0:
 			print 'Recurso ocupado'
 
         else:
             print 'Recurso agregado'
             global name
-            resources[msg['msg2']] = name
+            resources[server_msg['resource_index']] = name
+    
+    elif server_msg['msg_type'] == 2:
+        print 'Recurso agregado'
+        resources[server_msg['queued_resource']] = name
+        args['queued_client'] = server_msg['queued_client']
+        args['queued_resource'] = server_msg['queued_resource']
 
     print '--------------------------------------------------'
     
-    sendMsg()
+    send_msg(args)
 
 
 os.system('clear')
@@ -87,7 +109,7 @@ while True:
     for socks in read_sockets:
         if socks == server:
             json_msg = socks.recv(2048)
-            receiveMsg(json.loads(json_msg))
+            receive_msg(json.loads(json_msg))
 
         # else:
         #     message = sys.stdin.readline()

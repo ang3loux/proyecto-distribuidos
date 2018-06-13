@@ -14,52 +14,72 @@ if len(sys.argv) != 3:
     print "Uso correcto: script, direccion IP y puerto"
     exit()
 
-ipAddress = str(sys.argv[1])
+ip_address = str(sys.argv[1])
 port = int(sys.argv[2])
 number_clients = 3
-resource = ['', '', '']
+resources = ['', '', '']
+client_names = {
+    'by_name': {
+        'A': 2,
+        'B': 1,
+        'C': 0,
+    },
+    'by_index': ['C', 'B', 'A']
+}
 
-server.bind((ipAddress, port))
+server.bind((ip_address, port))
 server.listen(number_clients)
 
 connections = []
 
 
-def replyMsg(msg, connection, address):
-    if msg['typemsg'] == 0:
-        if resource[msg['msg']] == '':
-            resource[msg['msg']] = msg['msg2']
+def reply_msg(client_msg, connection, address):
+    if client_msg['msg_type'] == 0:
+        if resources[client_msg['resource_index']] == '':
+            resources[client_msg['resource_index']] = client_msg['client_name']
             json_msg = {
-                'typemsg': 1,
-                'msg': 1,
-                'msg2': msg['msg']
+                'msg_type': 1,
+                'msg_subtype': 1,
+                'resource_index': client_msg['resource_index']
             }
-            print 'Recurso ' + str(msg['msg']) + ' otorgado a ' + msg['msg2']
+            print 'Recurso ' + str(client_msg['resource_index']) + ' otorgado a ' + client_msg['client_name']
             connection.send(json.dumps(json_msg))
-            
+
         else:
             json_msg = {
-                'typemsg': 1,
-                'msg': 0,
+                'msg_type': 1,
+                'msg_subtype': 0,
             }
-            print 'Recurso ' + str(msg['msg']) + ' NO otorgado a ' + msg['msg2']
+            print 'Recurso ' + str(client_msg['resource_index']) + ' NO otorgado a ' + client_msg['client_name']
             connection.send(json.dumps(json_msg))
+    
+    elif client_msg['msg_type'] == 1:
+        queued_client = resources[client_msg['resource_index']]
+        resources[client_msg['resource_index']] = client_msg['client_name']
+        json_msg = {
+            'msg_type': 2,
+            'queued_client': queued_client,
+            'queued_resource': client_msg['resource_index']
+        }
+        print 'Recurso ' + str(client_msg['resource_index']) + ' otorgado a ' + client_msg['client_name']
+
+        if queued_client:
+            print 'Cliente ' + queued_client + ' puesto en espera'
+        connection.send(json.dumps(json_msg))
+
+    elif client_msg['msg_type'] == 2:
+        # DEVOLVER RECURSO AL CLIENTE QUE SE LE QUITO
+        print 'Chachan!'
 
 
 def connection_thread(connection, address, index):
-    if index == 2:
-        name_client = 'A'
-    elif index == 1:
-        name_client = 'B'
-    else:
-        name_client = 'C'
-
+    client_name = client_names['by_index'][index]
     json_msg = {
-        'typemsg': 0,
-        'msg': name_client,
+        'msg_type': 0,
+        'client_name': client_name,
     }
 
-    print 'Asignado a ' + address[0] + ' el nombre ' + name_client
+    print 'Asignado a ' + address[0] + ' el nombre ' + client_name
     connection.send(json.dumps(json_msg))
 
     while True:
@@ -68,7 +88,7 @@ def connection_thread(connection, address, index):
         try:
             json_msg = connection.recv(2048)
             if json_msg:
-                replyMsg(json.loads(json_msg), connection, address)
+                reply_msg(json.loads(json_msg), connection, address)
 
             else:
                 remove_connection(connection)
@@ -95,7 +115,7 @@ def remove_connection(connection):
 os.system('clear')
 
 print "Iniciando servidor"
-print "IP: " + ipAddress
+print "IP: " + ip_address
 print "Puerto: " + str(port)
 print "Nro de clientes: " + str(number_clients)
 print "\nEsperando a clientes..."
