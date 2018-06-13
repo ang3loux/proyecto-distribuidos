@@ -34,6 +34,8 @@ connections = []
 
 
 def reply_msg(client_msg, connection, address):
+    global resources
+
     if client_msg['msg_type'] == 0:
         if resources[client_msg['resource_index']] == '':
             resources[client_msg['resource_index']] = client_msg['client_name']
@@ -68,8 +70,13 @@ def reply_msg(client_msg, connection, address):
         connection.send(json.dumps(json_msg))
 
     elif client_msg['msg_type'] == 2:
+        resources = ['', '', '']
+        json_msg = {
+            'msg_type': 3,
+        }
+        print 'Recursos devueltos'
+        broadcast_message(json.dumps(json_msg))
         # DEVOLVER RECURSO AL CLIENTE QUE SE LE QUITO
-        print 'Chachan!'
 
 
 def connection_thread(connection, address, index):
@@ -97,10 +104,10 @@ def connection_thread(connection, address, index):
             continue
 
 
-def broadcast_message(message):
+def broadcast_message(msg):
     for connection in connections:
         try:
-            connection.send(message)
+            connection.send(msg)
         except:
             remove_connection(connection)
 

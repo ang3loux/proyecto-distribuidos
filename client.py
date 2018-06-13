@@ -27,6 +27,8 @@ def sleep_thread():
 
 
 def send_msg(args):
+    global name
+    global resources
     flag = 0
     missing_resource = -1
 
@@ -43,7 +45,7 @@ def send_msg(args):
                 json_msg = {
                     'msg_type': 0,
                     'resource_index': index,
-                    'client_name':name,
+                    'client_name': name,
                 }
                 print 'Recurso pedido: ' + str(index)
                 break
@@ -71,6 +73,8 @@ def send_msg(args):
 
 
 def receive_msg(server_msg):
+    global name
+    global resources
     args = {}
 
     if server_msg['msg_type'] == 0:
@@ -83,7 +87,6 @@ def receive_msg(server_msg):
 
         else:
             print 'Recurso agregado'
-            global name
             resources[server_msg['resource_index']] = name
     
     elif server_msg['msg_type'] == 2:
@@ -92,8 +95,13 @@ def receive_msg(server_msg):
         args['queued_client'] = server_msg['queued_client']
         args['queued_resource'] = server_msg['queued_resource']
 
+    elif server_msg['msg_type'] == 3:
+        resources = ['', '', '']
+        print 'Recursos liberados'
+
     print '--------------------------------------------------'
     
+    sleep_thread() 
     send_msg(args)
 
 
