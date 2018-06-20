@@ -29,6 +29,7 @@ def reply_msg(client_msg, connection, address):
     global resources
     
     sleep(2)
+    
     if client_msg['msg_type'] == 0:
         flag = 0
 
@@ -36,12 +37,25 @@ def reply_msg(client_msg, connection, address):
             if resource == '':
                 flag += 1
 
-        if flag == 0:
+        if flag == 0 and resources[0] != resources[1]:
+            for resource in resources:
+                if resource == client_msg['client_name']:
+                    resource = ''
+
             json_msg = {
                 'msg_type': 1,
                 'msg_subtype': 2
             }
-            print 'Liberando recursos de ' + client_msg['client_name']
+            print 'Recurso ' + str(client_msg['resource_index']) + ' NO otorgado a ' + client_msg['client_name']
+            print resources
+            connection.send(json.dumps(json_msg))
+
+        elif flag == 0 and resources[0] == resources[1]:
+            json_msg = {
+                'msg_type': 1,
+                'msg_subtype': 2
+            }
+            print 'Recurso ' + str(client_msg['resource_index']) + ' NO otorgado a ' + client_msg['client_name']
             print resources
             connection.send(json.dumps(json_msg))
 
@@ -109,14 +123,6 @@ def connection_thread(connection, address, index):
 
         except:
             continue
-
-
-def broadcast_message(msg):
-    for connection in connections:
-        try:
-            connection.send(msg)
-        except:
-            remove_connection(connection)
 
 
 def remove_connection(connection):
