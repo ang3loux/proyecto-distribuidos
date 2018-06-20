@@ -56,17 +56,13 @@ def reply_msg(client_msg, connection, address):
             connection.send(json.dumps(json_msg))
     
     elif client_msg['msg_type'] == 1:
-        queued_client = resources[client_msg['resource_index']]
         resources[client_msg['resource_index']] = client_msg['client_name']
         json_msg = {
             'msg_type': 2,
-            'queued_client': queued_client,
-            'queued_resource': client_msg['resource_index']
+            'resource_index': client_msg['resource_index']
         }
         print 'Recurso ' + str(client_msg['resource_index']) + ' otorgado a ' + client_msg['client_name']
-
-        if queued_client:
-            print 'Cliente ' + queued_client + ' puesto en espera'
+        print 'Todos los recursos ocupados por ' + client_msg['client_name']
         connection.send(json.dumps(json_msg))
 
     elif client_msg['msg_type'] == 2:
@@ -74,9 +70,8 @@ def reply_msg(client_msg, connection, address):
         json_msg = {
             'msg_type': 3,
         }
-        print 'Recursos devueltos'
-        broadcast_message(json.dumps(json_msg))
-        # DEVOLVER RECURSO AL CLIENTE QUE SE LE QUITO
+        print 'Recursos devueltos por ' + client_msg['client_name']
+        connection.send(json.dumps(json_msg))
 
 
 def connection_thread(connection, address, index):

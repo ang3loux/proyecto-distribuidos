@@ -26,7 +26,7 @@ def sleep_thread():
     sleep(sleep_time)
 
 
-def send_msg(args):
+def send_msg():
     global name
     global resources
     flag = 0
@@ -60,11 +60,10 @@ def send_msg(args):
         print 'Recurso pedido: ' + str(missing_resource)
 
     else:
+        print 'Consumiendo recursos'
         sleep_thread()
         json_msg = {
             'msg_type': 2,
-            'queued_client': args['queued_client'],
-            'queued_resource': args['queued_resource'],
             'client_name': name
         }
         print 'Liberando todos los recursos tomados'
@@ -75,7 +74,6 @@ def send_msg(args):
 def receive_msg(server_msg):
     global name
     global resources
-    args = {}
 
     if server_msg['msg_type'] == 0:
         name = server_msg['client_name']
@@ -91,24 +89,20 @@ def receive_msg(server_msg):
     
     elif server_msg['msg_type'] == 2:
         print 'Recurso agregado'
-        resources[server_msg['queued_resource']] = name
-        args['queued_client'] = server_msg['queued_client']
-        args['queued_resource'] = server_msg['queued_resource']
+        resources[server_msg['resource_index']] = name
 
     elif server_msg['msg_type'] == 3:
         resources = ['', '', '']
         print 'Recursos liberados'
 
     print '--------------------------------------------------'
-    
-    sleep_thread() 
-    send_msg(args)
+
+    send_msg()
 
 
 os.system('clear')
 
 while True:
-    # maintains a list of possible input streams
     sockets_list = [sys.stdin, server]
 
     read_sockets, write_socket, error_socket = select.select(
