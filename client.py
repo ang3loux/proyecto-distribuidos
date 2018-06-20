@@ -21,8 +21,8 @@ name = ''
 server.connect((ipAddress, port))
 
 def sleep_thread():
-    sleep_time = random.randint(1, 5)
-    print 'Me voy a dormir por ' + str(sleep_time) + ' seg(s)'
+    sleep_time = random.randint(3, 8)
+    print 'Usando recursos por ' + str(sleep_time) + ' segs'
     sleep(sleep_time)
 
 
@@ -60,8 +60,6 @@ def send_msg():
         print 'Recurso pedido: ' + str(missing_resource)
 
     else:
-        print 'Consumiendo recursos'
-        sleep_thread()
         json_msg = {
             'msg_type': 2,
             'client_name': name
@@ -83,13 +81,19 @@ def receive_msg(server_msg):
         if server_msg['msg_subtype'] == 0:
 			print 'Recurso ocupado'
 
-        else:
+        elif server_msg['msg_subtype'] == 1:
             print 'Recurso agregado'
             resources[server_msg['resource_index']] = name
+
+        elif server_msg['msg_subtype'] == 2:
+            print 'Liberando recursos'
+            resources = ['', '', '']
     
     elif server_msg['msg_type'] == 2:
         print 'Recurso agregado'
         resources[server_msg['resource_index']] = name
+        print 'Consumiendo recursos'
+        sleep_thread()
 
     elif server_msg['msg_type'] == 3:
         resources = ['', '', '']
@@ -112,12 +116,5 @@ while True:
         if socks == server:
             json_msg = socks.recv(2048)
             receive_msg(json.loads(json_msg))
-
-        # else:
-        #     message = sys.stdin.readline()
-        #     server.send(json.dumps(jsonTest))
-        #     sys.stdout.write("JSON enviado\n")
-        #     # sys.stdout.write(message)
-        #     sys.stdout.flush()
 
 server.close()

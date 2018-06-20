@@ -18,33 +18,42 @@ ip_address = str(sys.argv[1])
 port = int(sys.argv[2])
 number_clients = 3
 resources = ['', '', '']
-client_names = {
-    'by_name': {
-        'A': 2,
-        'B': 1,
-        'C': 0,
-    },
-    'by_index': ['C', 'B', 'A']
-}
+client_names = ['C', 'B', 'A']
 
 server.bind((ip_address, port))
 server.listen(number_clients)
 
 connections = []
 
-
 def reply_msg(client_msg, connection, address):
     global resources
-
+    
+    sleep(2)
     if client_msg['msg_type'] == 0:
-        if resources[client_msg['resource_index']] == '':
-            resources[client_msg['resource_index']] = client_msg['client_name']
+        flag = 0
+
+        for resource in resources:
+            if resource == '':
+                flag += 1
+
+        if flag == 0:
+            json_msg = {
+                'msg_type': 1,
+                'msg_subtype': 2
+            }
+            print 'Liberando recursos de ' + client_msg['client_name']
+            print resources
+            connection.send(json.dumps(json_msg))
+
+        elif resources[client_msg['resource_index']] == '':
+            resources[client_msg['resource_index']] = str(client_msg['client_name'])
             json_msg = {
                 'msg_type': 1,
                 'msg_subtype': 1,
                 'resource_index': client_msg['resource_index']
             }
             print 'Recurso ' + str(client_msg['resource_index']) + ' otorgado a ' + client_msg['client_name']
+            print resources
             connection.send(json.dumps(json_msg))
 
         else:
@@ -53,16 +62,18 @@ def reply_msg(client_msg, connection, address):
                 'msg_subtype': 0,
             }
             print 'Recurso ' + str(client_msg['resource_index']) + ' NO otorgado a ' + client_msg['client_name']
+            print resources
             connection.send(json.dumps(json_msg))
     
     elif client_msg['msg_type'] == 1:
-        resources[client_msg['resource_index']] = client_msg['client_name']
+        resources[client_msg['resource_index']] = str(client_msg['client_name'])
         json_msg = {
             'msg_type': 2,
             'resource_index': client_msg['resource_index']
         }
         print 'Recurso ' + str(client_msg['resource_index']) + ' otorgado a ' + client_msg['client_name']
         print 'Todos los recursos ocupados por ' + client_msg['client_name']
+        print resources
         connection.send(json.dumps(json_msg))
 
     elif client_msg['msg_type'] == 2:
@@ -71,11 +82,12 @@ def reply_msg(client_msg, connection, address):
             'msg_type': 3,
         }
         print 'Recursos devueltos por ' + client_msg['client_name']
+        print resources
         connection.send(json.dumps(json_msg))
 
 
 def connection_thread(connection, address, index):
-    client_name = client_names['by_index'][index]
+    client_name = client_names[index]
     json_msg = {
         'msg_type': 0,
         'client_name': client_name,
