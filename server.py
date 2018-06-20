@@ -38,9 +38,9 @@ def reply_msg(client_msg, connection, address):
                 flag += 1
 
         if flag == 0 and resources[0] != resources[1]:
-            for resource in resources:
+            for idx, resource in enumerate(resources):
                 if resource == client_msg['client_name']:
-                    resource = ''
+                    resources[idx] = ''
 
             json_msg = {
                 'msg_type': 1,
